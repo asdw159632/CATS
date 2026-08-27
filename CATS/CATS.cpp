@@ -27,6 +27,9 @@ CATS::CATS():
     IdenticalParticles = false;
     Q1Q2 = 0;
     Gamow = false;
+    UseFormCoulomb = false;
+    X1 = 0;
+    X2 = 0;
     RedMass = 0;
     pdgID[0] = 0;
     pdgID[1] = 0;
@@ -3412,8 +3415,85 @@ void CATS::GenerateTrueSourceHisto(){
 }
 
 double CATS::CoulombPotential(const double& Radius) const{
-    return Gamow?0:Q1Q2*AlphaFS/(fabs(Radius)+1e-64);
+    //if the Gamow correction is enabled, the Coulomb potential is turned off
+    if(Gamow) return 0;
+    //if the finite-charge-radius correction is enabled, use the form-factor potential
+    //V(r) = Q1Q2*AlphaFS/r * F_C(r), where r is in natural units (1/MeV) and F_C(r) is
+    //the dimensionless analytic shape function evaluated at the same distance in fm.
+    if(UseFormCoulomb){
+        const double rFm = fabs(Radius)*NuToFm;
+        const double FC = FormCoulombPotential(rFm, X1, X2);
+        return Q1Q2 * AlphaFS * FC / (fabs(Radius) + 1e-64);
+    }
+    return Q1Q2 * AlphaFS / (fabs(Radius) + 1e-64);
 }
+
+void CATS::SetFormCoulomb(const double& x1, const double& x2){
+    //if x1 or x2 is not positive, the correction is switched off
+    if(x1<=0 || x2<=0){
+        UseFormCoulomb = false;
+        X1 = 0;
+        X2 = 0;
+        ComputedWaveFunction = false;
+        ComputedCorrFunction = false;
+        return;
+    }
+    if(UseFormCoulomb && X1==x1 && X2==x2) return;
+    X1 = x1;
+    X2 = x2;
+    UseFormCoulomb = true;
+    ComputedWaveFunction = false;
+    ComputedCorrFunction = false;
+}
+void CATS::SetFormCoulombRD(const double& rd1, const double& Q1,
+                            const double& rd2, const double& Q2){
+    //compute the form-factor scales x_i = 2*Sqrt[3*|Q_i|]/rd_i and delegate to
+    //SetFormCoulomb; the radii and charges themselves are not stored
+    if(rd1<=0 || rd2<=0 || fabs(Q1)<=0 || fabs(Q2)<=0){
+        return;
+    }
+    SetFormCoulomb(2.*sqrt(3.*fabs(Q1))/rd1, 2.*sqrt(3.*fabs(Q2))/rd2);
+}
+bool CATS::GetUseFormCoulomb() const{
+    return UseFormCoulomb;
+}
+void CATS::GetFormCoulombX(double& x1, double& x2) const{
+    x1 = X1;
+    x2 = X2;
+}
+
+//!Computes the dimensionless form-factor correction F_C(r), defined by
+//!V(r) = Q1Q2*AlphaFS/r * F_C(r), for the squared-dipole form factors
+//!F_i(k) = Q_i * x_i^4 / (k^2 + x_i^2)^2, with x1,x2 the form-factor scale parameters
+//!(units 1/fm). This is the analytic closed form (FiniteSizeCoulomb_Derivation.md, Sec. 5):
+//!F_C(r) = x1^4 x2^4 * [ -2(1-e^(-x1 r))/(a (b-a)^3)
+//!                      + (2(1-e^(-x1 r))-x1 r e^(-x1 r))/(2 a^2 (b-a)^2)
+//!                      + 2(1-e^(-x2 r))/(b (b-a)^3)
+//!                      + (2(1-e^(-x2 r))-x2 r e^(-x2 r))/(2 b^2 (b-a)^2) ],
+//!with a = x1^2, b = x2^2. Long range: F_C(r) -> 1 (plain Coulomb recovered);
+//!at the origin F_C(0) = 0 with F_C(r)/r -> (5/16) x for x1 = x2 = x (Sec. 6).
+//!All distances are given in fm.
+double CATS::FormCoulombPotential(const double& r, const double& x1, const double& x2) const{
+    if(r<=0 || x1<=0 || x2<=0) return 0;
+    const double a = x1*x1;
+    const double b = x2*x2;
+    const double e1 = exp(-x1*r);
+    const double e2 = exp(-x2*r);
+    //for (nearly) equal x1 and x2 the closed form above has 1/(b-a)^3 terms that would
+    //cancel down to a smooth limit; there use the equal-radius result (Sec. 6) instead
+    if(fabs(b-a) <= 1e-6*(a+b)){
+        const double x = 0.5*(x1+x2);
+        const double t = x*r;
+        return 1. - e1*(1. + 11./16.*t + 3./16.*t*t + 1./48.*t*t*t);
+    }
+    const double d = b-a;
+    const double term1 = -2.*(1.-e1)/(a*d*d*d);
+    const double term2 =  (2.*(1.-e1)-x1*r*e1)/(2.*a*a*d*d);
+    const double term3 =   2.*(1.-e2)/(b*d*d*d);
+    const double term4 =  (2.*(1.-e2)-x2*r*e2)/(2.*b*b*d*d);
+    return x1*x1*x1*x1 * x2*x2*x2*x2 * (term1 + term2 + term3 + term4);
+}
+
 //the differential equation for the Schroedinger equation
 void CATS::PropagatingFunction(double& Basic, double& Full,
                                  const double& Radius, const double& Momentum,

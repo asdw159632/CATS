@@ -87,6 +87,26 @@ public:
     void SetGamow(const bool& gamow);
     bool GetGamow() const;
 
+    //!Form-factor modified Coulomb potential (finite charge radii of the two particles)
+    //!x1,x2 are the scale parameters of the squared-dipole form factors of the two
+    //!particles, F_i(k) = Q_i * x_i^4 / (k^2 + x_i^2)^2, in units of 1/fm. They encode
+    //!the finite charge radius: x_i = 2*Sqrt[3*|Q_i|]/r_d,i, i.e. large x = compact
+    //!charge (small radius), small x = extended charge (large radius). If x1 or x2 is
+    //!not positive, the plain 1/r Coulomb potential is used instead.
+    void SetFormCoulomb(const double& x1, const double& x2);
+    //!wrapper around SetFormCoulomb(x1,x2) taking the charge radii rd1,rd2 (in fm) and
+    //!the charge magnitudes Q1,Q2 instead: computes x_i = 2*Sqrt[3*|Q_i|]/rd_i and
+    //!delegates to SetFormCoulomb. Nothing is stored beyond the resulting x1,x2.
+    void SetFormCoulombRD(const double& rd1, const double& Q1,
+                          const double& rd2, const double& Q2);
+    bool GetUseFormCoulomb() const;
+    void GetFormCoulombX(double& x1, double& x2) const;
+    //!returns the dimensionless form-factor correction F_C(r), defined by
+    //!V(r) = Q1Q2*AlphaFS/r * F_C(r), evaluated for a distance r (in fm) and the two
+    //!form-factor scale parameters x1,x2 (units 1/fm). It is the analytic closed form
+    //!of the squared-dipole form factor (long range: F_C(r) -> 1).
+    double FormCoulombPotential(const double& r, const double& x1, const double& x2) const;
+
     unsigned GetNumMomBins() const;
     unsigned GetNumIpBins() const;
     unsigned GetNumPairs() const;
@@ -572,6 +592,15 @@ protected:
     CatsPotential** ShortRangePotential;
 
     double CoulombPotential(const double& Radius) const;
+
+    //!Form-factor modified Coulomb potential (finite charge radii)
+    //!if UseFormCoulomb==true, the plain 1/r Coulomb potential is replaced by
+    //!V(r) = Q1Q2*AlphaFS/r * F_C(r), with F_C(r) the analytic shape function based
+    //!on squared dipole form factors. X1,X2 are the form-factor scale parameters
+    //!(units 1/fm), F_i(k) = Q_i * x_i^4 / (k^2 + x_i^2)^2.
+    bool UseFormCoulomb;
+    double X1;
+    double X2;
 
     //input vars: [0] should always be the momentum, [1] the radius and [2] 'cosθ'
     double (*AnalyticSource)(double*);
