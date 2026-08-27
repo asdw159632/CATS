@@ -178,25 +178,16 @@ def load_root_path(install_lvl, bashrc_lines):
     return PATH_ROOT
 
 
-def load_gsl_include_path():
-    #path to the includes of GSL
-    PATH_GSL_INC = ""
+def manual_gsl_include_input(show_not_found):
+    #prompt the user to type the GSL include folder path
     PATH_GSL_INC = "gsl:"
-    OS_OUT = os.popen('whereis gsl')
-    #OS_OUT = "gsl:"
-    OS_READ = OS_OUT.read()
-    OS_SPLIT = OS_READ.split(" ")
-    for PATH_GSL_INC in OS_SPLIT:
-        if "gsl:" in PATH_GSL_INC:
-            continue
-        if is_gsl_include_okay(PATH_GSL_INC):
-            print(bcolors.OKGREEN+' GSL location found: '+bcolors.ENDC+PATH_GSL_INC)
-            break
     suggest = True
     while "gsl:" in PATH_GSL_INC:
-        print(bcolors.FAIL+' GNU-GSL not found!'+bcolors.ENDC)
+        if show_not_found:
+            print(bcolors.FAIL+' GNU-GSL not found!'+bcolors.ENDC)
         if suggest:
-            print(' Suggestion: intall using "sudo apt-get install libgsl-dev"')
+            if show_not_found:
+                print(' Suggestion: intall using "sudo apt-get install libgsl-dev"')
             print(' Type "abort" to terminate the installation.')
             print(' Alternatively, type the path to the GSL "include" folder, containing "gsl_*.h" files')
             suggest = False
@@ -204,36 +195,58 @@ def load_gsl_include_path():
         PATH_GSL_INC = input()
         if PATH_GSL_INC=='abort':
             print(bcolors.FAIL+'Installation canceled'+bcolors.ENDC)
-            return
-
+            return None
         if is_gsl_include_okay(PATH_GSL_INC):
             print(bcolors.OKGREEN+' GSL location valid!'+bcolors.ENDC)
         else:
             PATH_GSL_INC = "gsl:"
-
     return PATH_GSL_INC
 
 
-def load_gsl_lib_path():
-    #path to the lib of GSL
-    PATH_GSL_LIB = ""
-    PATH_GSL_LIB = "libgsl:"
-    OS_OUT = os.popen('whereis libgsl')
-    #OS_OUT = "gsl:"
+def load_gsl_include_path():
+    #path to the includes of GSL
+    PATH_GSL_INC = "gsl:"
+    PATH_GSL_INC_LIST = []
+    OS_OUT = os.popen('whereis gsl')
     OS_READ = OS_OUT.read()
     OS_SPLIT = OS_READ.split(" ")
-    for PATH_GSL_LIB in OS_SPLIT:
-        if "libgsl:" in PATH_GSL_LIB:
+    for string in OS_SPLIT:
+        string = string.rstrip('\n')
+        if "gsl:" in string:
             continue
-        PATH_GSL_LIB = get_gsl_lib(PATH_GSL_LIB)
-        if PATH_GSL_LIB!='libgsl:':
-            print(bcolors.OKGREEN+' LIBGSL location found: '+bcolors.ENDC+PATH_GSL_LIB)
-            break
+        if is_gsl_include_okay(string):
+            PATH_GSL_INC_LIST.append(string)
+
+    if len(PATH_GSL_INC_LIST)>0:
+        print(bcolors.OKCYAN+' GSL installations found! '+bcolors.ENDC)
+        print(bcolors.BOLD+bcolors.OKCYAN+'  Please select one from the list:'+bcolors.ENDC)
+        for id in range(len(PATH_GSL_INC_LIST)):
+            print('  ({:d}): '.format(id)+PATH_GSL_INC_LIST[id])
+        print('  ({:d}): '.format(len(PATH_GSL_INC_LIST))+'Manual input')
+        print(' Desired version: ', end = '')
+        WhichVersion = input_number_range(0,len(PATH_GSL_INC_LIST))
+        if WhichVersion<0:
+            return None
+        if WhichVersion==len(PATH_GSL_INC_LIST):
+            return manual_gsl_include_input(False)
+        PATH_GSL_INC = PATH_GSL_INC_LIST[WhichVersion]
+        print(bcolors.OKGREEN+' GSL location found: '+bcolors.ENDC+PATH_GSL_INC)
+        return PATH_GSL_INC
+
+    #no GSL found automatically, manual input required
+    return manual_gsl_include_input(True)
+
+
+def manual_gsl_lib_input(show_not_found):
+    #prompt the user to type the GSL lib folder path
+    PATH_GSL_LIB = "libgsl:"
     suggest = True
     while "libgsl:" in PATH_GSL_LIB:
-        print(bcolors.FAIL+' LIBGSL not found!'+bcolors.ENDC)
+        if show_not_found:
+            print(bcolors.FAIL+' LIBGSL not found!'+bcolors.ENDC)
         if suggest:
-            print(' Suggestion: intall using "sudo apt-get install libgsl-dev"')
+            if show_not_found:
+                print(' Suggestion: intall using "sudo apt-get install libgsl-dev"')
             print(' Type "abort" to terminate the installation.')
             print(' Alternatively, type the path to the GSL "lib" folder, containing "libgsl.so" and/or "libgsl.a" files')
             suggest = False
@@ -241,14 +254,47 @@ def load_gsl_lib_path():
         PATH_GSL_LIB = input()
         if PATH_GSL_LIB=='abort':
             print(bcolors.FAIL+'Installation canceled'+bcolors.ENDC)
-            return
-
+            return None
         if is_gsl_lib_okay(PATH_GSL_LIB):
             print(bcolors.OKGREEN+' LIBGSL location valid!'+bcolors.ENDC)
         else:
             PATH_GSL_LIB = "libgsl:"
-
     return PATH_GSL_LIB
+
+
+def load_gsl_lib_path():
+    #path to the lib of GSL
+    PATH_GSL_LIB = "libgsl:"
+    PATH_GSL_LIB_LIST = []
+    OS_OUT = os.popen('whereis libgsl')
+    OS_READ = OS_OUT.read()
+    OS_SPLIT = OS_READ.split(" ")
+    for string in OS_SPLIT:
+        string = string.rstrip('\n')
+        if "libgsl:" in string:
+            continue
+        PATH_GSL_LIB = get_gsl_lib(string)
+        if PATH_GSL_LIB!='libgsl:' and is_gsl_lib_okay(PATH_GSL_LIB) and PATH_GSL_LIB not in PATH_GSL_LIB_LIST:
+            PATH_GSL_LIB_LIST.append(PATH_GSL_LIB)
+
+    if len(PATH_GSL_LIB_LIST)>0:
+        print(bcolors.OKCYAN+' LIBGSL installations found! '+bcolors.ENDC)
+        print(bcolors.BOLD+bcolors.OKCYAN+'  Please select one from the list:'+bcolors.ENDC)
+        for id in range(len(PATH_GSL_LIB_LIST)):
+            print('  ({:d}): '.format(id)+PATH_GSL_LIB_LIST[id])
+        print('  ({:d}): '.format(len(PATH_GSL_LIB_LIST))+'Manual input')
+        print(' Desired version: ', end = '')
+        WhichVersion = input_number_range(0,len(PATH_GSL_LIB_LIST))
+        if WhichVersion<0:
+            return None
+        if WhichVersion==len(PATH_GSL_LIB_LIST):
+            return manual_gsl_lib_input(False)
+        PATH_GSL_LIB = PATH_GSL_LIB_LIST[WhichVersion]
+        print(bcolors.OKGREEN+' LIBGSL location found: '+bcolors.ENDC+PATH_GSL_LIB)
+        return PATH_GSL_LIB
+
+    #no LIBGSL found automatically, manual input required
+    return manual_gsl_lib_input(True)
 
 
 def add_to_bashrc(OS_CMD):
