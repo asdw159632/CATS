@@ -3465,33 +3465,62 @@ void CATS::GetFormCoulombX(double& x1, double& x2) const{
 //!Computes the dimensionless form-factor correction F_C(r), defined by
 //!V(r) = Q1Q2*AlphaFS/r * F_C(r), for the squared-dipole form factors
 //!F_i(k) = Q_i * x_i^4 / (k^2 + x_i^2)^2, with x1,x2 the form-factor scale parameters
-//!(units 1/fm). This is the analytic closed form (FiniteSizeCoulomb_Derivation.md, Sec. 5):
-//!F_C(r) = x1^4 x2^4 * [ -2(1-e^(-x1 r))/(a (b-a)^3)
-//!                      + (2(1-e^(-x1 r))-x1 r e^(-x1 r))/(2 a^2 (b-a)^2)
-//!                      + 2(1-e^(-x2 r))/(b (b-a)^3)
-//!                      + (2(1-e^(-x2 r))-x2 r e^(-x2 r))/(2 b^2 (b-a)^2) ],
-//!with a = x1^2, b = x2^2. Long range: F_C(r) -> 1 (plain Coulomb recovered);
-//!at the origin F_C(0) = 0 with F_C(r)/r -> (5/16) x for x1 = x2 = x (Sec. 6).
+//!(units 1/fm). Three analytic closed forms are used, see
+//!FiniteSizeCoulomb_Derivation.md:
+//!  * general x1 != x2                       -> Sec. 5
+//!  * nearly equal x1,x2 (|b-a| <= 1e-4(a+b))-> Sec. 6, evaluated at the mean
+//!                                              xbar = (x1+x2)/2
+//!  * one point-like particle (x_i -> inf)   -> Sec. 7
+//!Long range: F_C(r) -> 1 (plain Coulomb recovered); F_C(0) = 0 with
+//!F_C(r)/r -> (5/16) x for x1 = x2 = x, resp. x/2 for one point-like particle.
 //!All distances are given in fm.
-double CATS::FormCoulombPotential(const double& r, const double& x1, const double& x2) const{
+double CATS::FormCoulombPotential(const double& r, const double& x1, const double& x2){
     if(r<=0 || x1<=0 || x2<=0) return 0;
-    const double a = x1*x1;
-    const double b = x2*x2;
-    const double e1 = exp(-x1*r);
-    const double e2 = exp(-x2*r);
-    //for (nearly) equal x1 and x2 the closed form above has 1/(b-a)^3 terms that would
-    //cancel down to a smooth limit; there use the equal-radius result (Sec. 6) instead
-    if(fabs(b-a) <= 1e-6*(a+b)){
-        const double x = 0.5*(x1+x2);
-        const double t = x*r;
-        return 1. - e1*(1. + 11./16.*t + 3./16.*t*t + 1./48.*t*t*t);
+
+    //--- point-like particle: x_i -> infinity (Sec. 7) ------------------------
+    //F_C(r) = 1 - e^{-x r}(1 + x r/2), built with the *finite* scale parameter.
+    //The 1e6 ratio keeps the truncation error below ~4e-13; x_i = +inf also works.
+    if(x2 >= 1e6*x1){
+        const double u = x1*r;
+        return 1. - exp(-u)*(1. + 0.5*u);
     }
-    const double d = b-a;
-    const double term1 = -2.*(1.-e1)/(a*d*d*d);
-    const double term2 =  (2.*(1.-e1)-x1*r*e1)/(2.*a*a*d*d);
-    const double term3 =   2.*(1.-e2)/(b*d*d*d);
-    const double term4 =  (2.*(1.-e2)-x2*r*e2)/(2.*b*b*d*d);
-    return x1*x1*x1*x1 * x2*x2*x2*x2 * (term1 + term2 + term3 + term4);
+    if(x1 >= 1e6*x2){
+        const double u = x2*r;
+        return 1. - exp(-u)*(1. + 0.5*u);
+    }
+
+    const double a  = x1*x1;
+    const double b  = x2*x2;
+    const double u1 = x1*r;
+    const double u2 = x2*r;
+    const double e1 = exp(-u1);
+    const double e2 = exp(-u2);
+    const double em1 = 1. - e1;   // = 1 - e^{-x1 r}
+    const double em2 = 1. - e2;
+
+    //--- nearly equal x1,x2 (Sec. 6) ------------------------------------------
+    //The general form below carries 1/(rho-1)^3 terms that cancel down to a
+    //smooth limit. Expanding in s=(b-a)/a one finds
+    //   F_C = F_C^eq(xbar*r) + O(s^2),   xbar = (x1+x2)/2,
+    //because the first-order coefficient c1(u)=(u/4)*dF_C^eq/du cancels exactly
+    //against the shift x1 -> xbar. Both the exponential and the polynomial must
+    //therefore use xbar (using exp(-x1*r) here would cost one order in s).
+    if(fabs(b-a) <= 1e-4*(a+b)){
+        const double t = 0.5*(x1+x2)*r;
+        return 1. - exp(-t)*(1. + 11./16.*t + 3./16.*t*t + 1./48.*t*t*t);
+    }
+
+    //--- general case (Sec. 5), written with the dimensionless ratio
+    //rho = (x2/x1)^2 so that every term stays O(1): no overflow for large x,
+    //and the rho -> infinity limit is reached smoothly.
+    //F_C = [ -2 rho^2 (1-e^{-u1}) + 2 rho (1-e^{-u2}) ] / (rho-1)^3
+    //    + [ rho^2 (2(1-e^{-u1}) - u1 e^{-u1})
+    //        + (2(1-e^{-u2}) - u2 e^{-u2}) ] / (2 (rho-1)^2)
+    const double rho = b/a;
+    const double rm1 = rho - 1.;
+    const double numA = -2.*rho*rho*em1 + 2.*rho*em2;
+    const double numB = rho*rho*(2.*em1 - u1*e1) + (2.*em2 - u2*e2);
+    return numA/(rm1*rm1*rm1) + numB/(2.*rm1*rm1);
 }
 
 //the differential equation for the Schroedinger equation
