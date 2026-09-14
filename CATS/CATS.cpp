@@ -3428,7 +3428,7 @@ double CATS::CoulombPotential(const double& Radius) const{
     return Q1Q2 * AlphaFS / (fabs(Radius) + 1e-64);
 }
 
-void CATS::SetFormCoulomb(const double& x1, const double& x2){
+void CATS::SetFormCoulomb(const double& x1, const double& x2) {
     //if x1 or x2 is not positive, the correction is switched off
     if(x1<=0 || x2<=0){
         UseFormCoulomb = false;
@@ -3446,7 +3446,7 @@ void CATS::SetFormCoulomb(const double& x1, const double& x2){
     ComputedCorrFunction = false;
 }
 void CATS::SetFormCoulombRD(const double& rd1, const double& Q1,
-                            const double& rd2, const double& Q2){
+                            const double& rd2, const double& Q2) {
     //compute the form-factor scales x_i = 2*Sqrt[3*|Q_i|]/rd_i and delegate to
     //SetFormCoulomb; the radii and charges themselves are not stored.
     //A charge radius of zero (or less) stands for a point-like particle: its
@@ -3489,7 +3489,7 @@ void CATS::GetFormCoulombX(double& x1, double& x2) const{
 //!Long range: F_C(r) -> 1 (plain Coulomb recovered); F_C(0) = 0 with
 //!F_C(r)/r -> (5/16) x for x1 = x2 = x, resp. x/2 for one point-like particle.
 //!All distances are given in fm.
-double CATS::FormCoulombPotential(const double& r, const double& x1, const double& x2){
+double CATS::FormCoulombPotential(const double& r, const double& x1, const double& x2) const{
     if(r<=0 || x1<=0 || x2<=0) return 0;
 
     //--- point-like particle: x_i -> infinity (Sec. 7) ------------------------
