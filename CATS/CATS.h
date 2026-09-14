@@ -97,6 +97,9 @@ public:
     //!wrapper around SetFormCoulomb(x1,x2) taking the charge radii rd1,rd2 (in fm) and
     //!the charge magnitudes Q1,Q2 instead: computes x_i = 2*Sqrt[3*|Q_i|]/rd_i and
     //!delegates to SetFormCoulomb. Nothing is stored beyond the resulting x1,x2.
+    //!A radius of zero (or less) stands for a point-like particle: x_i is then set
+    //!far above the other one so that FormCoulombPotential uses its point-like
+    //!branch. If both radii are zero the correction is switched off (F_C = 1).
     void SetFormCoulombRD(const double& rd1, const double& Q1,
                           const double& rd2, const double& Q2);
     bool GetUseFormCoulomb() const;

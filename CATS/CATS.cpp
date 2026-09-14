@@ -3448,11 +3448,26 @@ void CATS::SetFormCoulomb(const double& x1, const double& x2){
 void CATS::SetFormCoulombRD(const double& rd1, const double& Q1,
                             const double& rd2, const double& Q2){
     //compute the form-factor scales x_i = 2*Sqrt[3*|Q_i|]/rd_i and delegate to
-    //SetFormCoulomb; the radii and charges themselves are not stored
-    if(rd1<=0 || rd2<=0 || fabs(Q1)<=0 || fabs(Q2)<=0){
+    //SetFormCoulomb; the radii and charges themselves are not stored.
+    //A charge radius of zero (or less) stands for a point-like particle: its
+    //scale parameter is then pushed a factor 1e7 above the other one, which makes
+    //FormCoulombPotential use its point-like branch (Sec. 7) with the finite x.
+    const bool Point1 = (rd1<=0);
+    const bool Point2 = (rd2<=0);
+    if(Point1 && Point2){
+        //both point-like: the correction is trivial (F_C = 1), i.e. plain Coulomb
+        SetFormCoulomb(0., 0.);
         return;
     }
-    SetFormCoulomb(2.*sqrt(3.*fabs(Q1))/rd1, 2.*sqrt(3.*fabs(Q2))/rd2);
+    //for a finite radius we need a non-vanishing charge
+    if(!Point1 && fabs(Q1)<=0) return;
+    if(!Point2 && fabs(Q2)<=0) return;
+
+    double x1 = Point1 ? 0. : 2.*sqrt(3.*fabs(Q1))/rd1;
+    double x2 = Point2 ? 0. : 2.*sqrt(3.*fabs(Q2))/rd2;
+    if(Point1) x1 = 1e7*x2;
+    if(Point2) x2 = 1e7*x1;
+    SetFormCoulomb(x1, x2);
 }
 bool CATS::GetUseFormCoulomb() const{
     return UseFormCoulomb;
