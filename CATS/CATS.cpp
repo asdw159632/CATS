@@ -2002,10 +2002,29 @@ void CATS::ComputeWaveFunction(){
 
             double MaxDeltaRad;
             double MinDeltaRad;
+            //Short-range reference step.  The propagation function of the auxiliary
+            //potential Vref(r) = 1/((hbar c)^2 r^2)  [r in fm, Vref in MeV] is
+            //      fRef(r) = -Momentum^2 + RefPropCoeff/r^2 ,
+            //with  RefPropCoeff = 2*RedMass/(hbar c)^4 = 2*RedMass/NuToFm^4 .
+            //Requiring  DeltaRad <= sqrt(EpsilonPropEff/|fRef|)  gives a geometric
+            //short-range grid  DeltaRad(r) ~ rho*r  with
+            //      rho = sqrt(EpsilonPropEff/RefPropCoeff) ~ 2.5 ,
+            //and becomes irrelevant for large r, where fRef -> -Momentum^2 and the
+            //constraint merges with MaxDeltaRad.  Without this term a potential which
+            //vanishes as r -> 0 makes sqrt(EpsilonPropEff/|f|) degenerate to
+            //sqrt(EpsilonPropEff)/Momentum, i.e. the whole short-range potential would
+            //be skipped in a single step.
+            const double RefPropCoeff = 2.*RedMass/(NuToFm*NuToFm*NuToFm*NuToFm);
+            double RefDeltaRad;
 
             PropagatingFunction(PropFunWithoutSI[0], PropFunVal[0], StartRad, Momentum, usPW, usCh);
             MinDeltaRad = sqrt(fabs(EpsilonPropEff/(PropFunVal[0]+1e-64)));
             MaxDeltaRad = sqrt(EpsilonPropEff/(Momentum*Momentum));
+
+            //the initial step is the smaller of the two estimates (physical potential and
+            //short-range reference term, the latter evaluated at StartRad)
+            RefDeltaRad = sqrt(EpsilonPropEff/(fabs(-Momentum*Momentum+RefPropCoeff/(StartRad*StartRad))+1e-64));
+            if(RefDeltaRad<MinDeltaRad) MinDeltaRad=RefDeltaRad;
 
             if(MinDeltaRad>MaxDeltaRad) MinDeltaRad=MaxDeltaRad;
 
@@ -2129,11 +2148,17 @@ else{
 
                 DeltaRad2[kNew] = EpsilonPropEff/(fabs(PropFunVal[kNew])+1e-64);
                 DeltaRad[kNew] = sqrt(DeltaRad2[kNew]);
-                if(DeltaRad[kNew]<MinDeltaRad){
-                    DeltaRad[kNew]=MinDeltaRad;
+                //short-range reference constraint: the step may not exceed the geometric
+                //grid rho*r (see RefPropCoeff above).  The former lower clamp
+                //DeltaRad[kNew] >= MinDeltaRad is dropped on purpose: when the potential
+                //vanishes as r -> 0 it pinned the step to sqrt(EpsilonPropEff)/Momentum
+                //and thus skipped the whole short-range potential.
+                RefDeltaRad = sqrt(EpsilonPropEff/(fabs(-Momentum*Momentum+RefPropCoeff/(PosRad[kNew]*PosRad[kNew]))+1e-64));
+                if(DeltaRad[kNew]>RefDeltaRad){
+                    DeltaRad[kNew]=RefDeltaRad;
                     DeltaRad2[kNew]=DeltaRad[kNew]*DeltaRad[kNew];
                 }
-                else if(DeltaRad[kNew]>MaxDeltaRad){
+                if(DeltaRad[kNew]>MaxDeltaRad){
                     DeltaRad[kNew]=MaxDeltaRad;
                     DeltaRad2[kNew]=DeltaRad[kNew]*DeltaRad[kNew];
                 }
