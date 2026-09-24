@@ -245,6 +245,15 @@ public:
   //The factor is by default 1.5, but it can be changed to any value between 1.2 and 10.
   //We can also control the number of refinements to do. Allowed range: 0 to 100 (default 30)
   void SetParRefinements(const unsigned ref_num, const float ref_fac);
+  //the maximum steps per refinement. By default 300.
+  //the absolute minimal value you can set is 30, which is the default minimum which cannot be changed
+  //the maximal value is 10000
+  void SetMaxStepsPerRef(const unsigned num_step);
+  //how many steps are to be used to evaluate the error
+  //by default it is 300, which should be very good in most cases.
+  //you can reduce it (to save time) in case you dont have that many correlated parameters,
+  //or increase it for complicated fits
+  void SetErrorCalcSteps(const unsigned num_step);
   //default 0.25. This parameter gives us a cut-off at which we stop refining the parameter space, given in units 
   //of chi2. I.e. if neighbouring grid pts do not result in larger chi2 differences, we stop the whole fit
   //lower value will give more precision, but will increase computational time.
@@ -278,7 +287,13 @@ public:
   int GetNDF();
   unsigned GetNumberFitPoints();
   unsigned GetNumberFreeParameters();
-  float GetProb();
+  float GetProb() const;
+
+  //these are all sets of parameters that were used for the 1 sigma error estimation.
+  //They can be used to evaluate the error of a related observable.
+  //It should be done by taking the min/max value of the observable evaluated with all sets of parameters.
+  //!!! DO NOT TAKE 68% confidence or anything like that, it should be MIN/MAX of ALL sets to get the 1 sigma error !!!
+  std::vector<std::vector<float>> GetOneSigmaParameters() const;
 
   void SetRandomSeed(unsigned rnd_seed);
 
@@ -335,20 +350,32 @@ private:
   double epsChi2;
   double zero_bin_err;
   unsigned num_refinements;
+  unsigned num_step_per_ref;
   double refinment_factor;
+  unsigned error_steps;
 
   unsigned num_solutions;
 
+  //temp variables for the calculation
   double currentChi2;
+  //this is also temp, the currentBestChi2 on a single refinement step
   double currentBestChi2;
+  //this is the TOTAL best chi2, out of all iterations
+  double globalBestChi2;
   unsigned num_data_pts;
   unsigned num_free_fit_pars;
 
   //to be used often in the code, defined here for convenience to avoid repeated mem allocation
   unsigned* which_bin;
   unsigned* which_bin_best;
-  std::vector<unsigned>* tot_best_bin;
-
+  std::vector<unsigned>* current_best_bin;
+  //the parameters corresponding to the best achieved solution
+  std::vector<float>* globalBestPars;
+  //these are error_steps number of set of parameters that were used for 
+  //the error estimation. They can be used to evaluate the error of a related observable.
+  //It should be done by taking the min/max value of the observable [all globalBestPars1sig]
+  //!!! DO NOT TAKE 68% confidence or anything like that, it should be MIN/MAX to get the 1 sigma error !!!
+  std::vector<std::vector<float>>* globalBestPars1sig;
 
 
   void del_chi2_grid();

@@ -302,10 +302,7 @@ bool DLM_Fit::ProbePars(const std::vector<float>* pars, const unsigned& ThId){
     return false;
   }
   //the values of the Model should be set here
-//printf("FitFnct...\n");
-//printf("size = %u\n",pars->size());
   FitFnct(*pars,*Model[ThId]);
-//printf("Okay...\n");
   //evaluate the chi2
   chi2[ThId] = 0;
   NumDataPts[ThId] = 0;
@@ -318,7 +315,6 @@ bool DLM_Fit::ProbePars(const std::vector<float>* pars, const unsigned& ThId){
       printf("\033[1;31mERROR:\033[0m (DLM_Fit::Eval) The model is not set up!\n");
       return false;
     }
-//printf("true...\n");
     double* axisVal = new double [Data->at(uData)->GetDim()];
     unsigned* binID = new unsigned [Data->at(uData)->GetDim()];
     for(unsigned uBin=0; uBin<Model[ThId]->at(uData)->GetNbins(); uBin++){
@@ -343,7 +339,6 @@ bool DLM_Fit::ProbePars(const std::vector<float>* pars, const unsigned& ThId){
         DataErr = Data->at(uData)->GetBinError(uBin);
         ModVal = Model[ThId]->at(uData)->GetBinContent(uBin);
         ModErr = Model[ThId]->at(uData)->GetBinError(uBin);
-        //printf("DV %.3f DE %.3f MV %.3f ME %.3f\n",DataVal, DataErr, ModVal, ModErr);
         chi2[ThId] += pow((DataVal-ModVal),2.)/(DataErr*DataErr+ModErr*ModErr);
         //chi2[ThId] += pow((DataVal-ModVal),2.)/fabs(ModVal);
         NumDataPts[ThId]++;
@@ -351,7 +346,6 @@ bool DLM_Fit::ProbePars(const std::vector<float>* pars, const unsigned& ThId){
     }//uBin
     delete [] axisVal;
   }
-  //printf("probe DONE\n");
   return true;
 }
 
@@ -363,7 +357,6 @@ std::vector<DLM_Histo<float>*> DLM_Fit::Eval(const std::vector<float>& pars){
   }
   else{
     ThIdSol = ThId;
-    //printf("ThIdSol = %u\n",ThIdSol);
     return *Model[ThId];
   }
 /*
@@ -403,7 +396,6 @@ std::vector<DLM_Histo<float>*> DLM_Fit::Eval(const std::vector<float>& pars){
         DataErr = Data->at(uData)->GetBinError(uBin);
         ModVal = Model->at(uData)->GetBinContent(uBin);
         ModErr = Model->at(uData)->GetBinError(uBin);
-        //printf("DV %.3f DE %.3f MV %.3f ME %.3f\n",DataVal, DataErr, ModVal, ModErr);
         chi2 += pow((DataVal-ModVal),2.)/(DataErr*DataErr+ModErr*ModErr);
         NumDataPts++;
       }
@@ -568,9 +560,6 @@ bool DLM_Fit::PrepareForWalk(){
       }
 
 
-//printf("uPar %u: [%.4e, %.4e]\n",uPar,ParL->at(uPar),ParU->at(uPar));
-//printf("   (+): exp in [%i, %i]; mantissa in [%.4f, %.4f]\n",MinExp_Pos[uPar],MaxExp_Pos[uPar],MinManVal_Pos[uPar],MaxManVal_Pos[uPar]);
-//printf("   (-): exp in [%i, %i]; mantissa in [%.4f, %.4f]\n",MinExp_Neg[uPar],MaxExp_Neg[uPar],MinManVal_Neg[uPar],MaxManVal_Neg[uPar]);
     }
 
     //setting NumBestSols initial random solutions
@@ -580,7 +569,6 @@ bool DLM_Fit::PrepareForWalk(){
         if( ParIsFixed(uPar) ){
           //the set value
           Solution->back().Par->push_back(Par->at(uPar));
-          //printf(" -> F %f\n",Solution->back().Par->at(uPar));
         }
         else{
           if(ParL->at(uPar)>=0){
@@ -593,7 +581,6 @@ bool DLM_Fit::PrepareForWalk(){
             //how many orders of magnitudes are covered on the positive/negative side
             int PosRange = MaxExp_Pos[uPar]-MinExp_Pos[uPar]+1;
             int NegRange = MaxExp_Neg[uPar]-MinExp_Neg[uPar]+1;
-            //printf("+ : - = %i:%i\n",PosRange,NegRange);
             RndSign = RanGen[ThId]->Integer(PosRange+NegRange)<PosRange?1:-1;
           }
 
@@ -694,14 +681,11 @@ bool DLM_Fit::PrepareForWalk(){
     unsigned BestSolIdUp = Solution->size()-1;
     unsigned BestSolIdLow = Solution->size()-NumBestSols;
 
-//for(DLM_FitSolution& sol : *Solution){
-//  printf("SOL chi2 = %e; ps=%u\n",sol.Chi2,sol.Par->size());
-//}
+
 
     //the best chi2 from all solutions so far
     //double BestChi2 = Solution->at(0).Chi2;
 
-  //printf("DeltaChi2 = %f\n",DeltaChi2);
 
     //const unsigned NumFreePars = Npar(true);
     //A target is the ID of a solution that we want to use as the 0-th solution for the walk
@@ -714,7 +698,6 @@ bool DLM_Fit::PrepareForWalk(){
     std::vector<unsigned> PotentialTargets;
     for(unsigned uBS=BestSolIdLow; uBS<=BestSolIdUp; uBS++){
       PotentialTargets.push_back(uBS);
-//printf("PT chi2 = %e\n", Solution->at(uBS).Chi2);
     }
     if(PotentialTargets.size() != NumBestSols){
       printf("\033[1;31mFATAL ERROR:\033[0m (DLM_Fit::PrepareForWalk) PotentialTargets.size() != NumBestSols shows a bug, contact the developers!\n");
@@ -733,12 +716,8 @@ bool DLM_Fit::PrepareForWalk(){
         PotentialTargets.erase(PotentialTargets.begin()+target);
       }
     }
-//for(unsigned target : Targets){
-//printf("TRG %u chi2 = %e\n",target,Solution->at(target).Chi2);
-//}
-  //printf("Targets in sight\n");
+
     for(unsigned target : Targets){
-      //printf("T%u sz %lu =? %lu\n",target,Solution->at(target).Par->size(),Solution->at(target).Par->size());
       for(unsigned uBS=BestSolIdLow; uBS<=BestSolIdUp; uBS++){
         //we must have two differen elements
         if(uBS==target) continue;
@@ -828,7 +807,6 @@ void DLM_Fit::WanderAround(){
     return;
   }
 
-//printf("SolZero = %i / %i %i\n",SolZero,SolFinal,Solution->size());
   if(InterProcess){
     printf("InterProcess NOT DONE YET\n");
   }
@@ -837,13 +815,8 @@ void DLM_Fit::WanderAround(){
     //#pragma omp parallel for
     for( int iSol=SolZero; iSol<=SolFinal; iSol++){
       unsigned ThId = omp_get_thread_num();
-      //printf("Probe %i (%u)\n",iSol,ThId);
-      //usleep(2000e3);
       ProbePars(Solution->at(iSol).Par,ThId);
-      //printf(" done\n");
-      //usleep(2000e3);
       Solution->at(iSol).Chi2 = chi2[ThId];
-      //printf(" going out\n");
       COUNTER++;
       CurCntr++;
     }
@@ -904,13 +877,6 @@ unsigned DLM_Fit::ThIdBestSol(){
 
 bool DLM_Fit::DEBUG_PrepareForWalk(){
   return PrepareForWalk();
-  for(unsigned uSol=0; uSol<Solution->size(); uSol++){
-    //printf("sol%u: ",uSol);
-    for(unsigned uPar=0; uPar<Solution->at(uSol).Par->size(); uPar++){
-      //printf("p%u=%.3e ",uPar,Solution->at(uSol).Par->at(uPar));
-    }
-    //printf("\n");
-  }
 }
 
 
@@ -925,7 +891,7 @@ bool DLM_Fit::DEBUG_PrepareForWalk(){
 
 
 
-  DLM_SA_Fit::DLM_SA_Fit(const unsigned& ndata, const unsigned& npars):N_Data(ndata),N_Pars(npars),min_n_grid_pts(30),max_n_grid_pts(268435456),max_n_solutions(8){
+  DLM_SA_Fit::DLM_SA_Fit(const unsigned& ndata, const unsigned& npars):N_Data(ndata),N_Pars(npars),min_n_grid_pts(30),max_n_grid_pts(268435456),max_n_solutions(1){
     Par = NULL;
     ParMin = NULL;
     ParMax = NULL;
@@ -979,9 +945,12 @@ bool DLM_Fit::DEBUG_PrepareForWalk(){
     epsChi2 = 0.25;
     zero_bin_err = 1e-37;
     num_refinements = 20;
+    num_step_per_ref = 300;
+    error_steps = 300;
     refinment_factor = 4;
     currentChi2 = -1;
     currentBestChi2 = 1e37;
+    globalBestChi2 = 1e37;
     num_data_pts = 0;
     num_free_fit_pars = 0;
     num_solutions = 0;
@@ -989,7 +958,9 @@ bool DLM_Fit::DEBUG_PrepareForWalk(){
 
     which_bin = new unsigned [N_Pars];
     which_bin_best = new unsigned [N_Pars];
-    tot_best_bin = new std::vector<unsigned> (max_n_solutions,0);
+    current_best_bin = new std::vector<unsigned> (max_n_solutions,0);
+    globalBestPars = new std::vector<float> (N_Pars,0);
+    globalBestPars1sig = new std::vector<std::vector<float>> (); 
 
   }
   DLM_SA_Fit::~DLM_SA_Fit(){
@@ -1064,9 +1035,9 @@ bool DLM_Fit::DEBUG_PrepareForWalk(){
       delete [] which_bin_best;
       which_bin_best = NULL;
     }    
-    if(tot_best_bin){
-      delete tot_best_bin;
-      tot_best_bin = NULL;
+    if(current_best_bin){
+      delete current_best_bin;
+      current_best_bin = NULL;
     }
   }
 
@@ -1138,6 +1109,23 @@ bool DLM_Fit::DEBUG_PrepareForWalk(){
     num_refinements = ref_num;
     refinment_factor = ref_fac;
   }
+
+void DLM_SA_Fit::SetMaxStepsPerRef(const unsigned num_step){
+    if(num_step<30 || num_step>10000){
+      printf("\033[1;33mWARNING:\033[0m DLM_SA_Fit::SetMaxStepsPerRef can take numbers between [30,10000]\n");
+      return;
+    } 
+    num_step_per_ref = num_step;
+}
+
+void DLM_SA_Fit::SetErrorCalcSteps(const unsigned num_step){
+    if(num_step<30 || num_step>10000){
+      printf("\033[1;33mWARNING:\033[0m DLM_SA_Fit::SetErrorCalcSteps can take numbers between [30,10000]\n");
+      return;
+    } 
+    error_steps = num_step;
+}
+
   //default 0.25. This parameter gives us a cut-off at which we stop refining the parameter space, given in units 
   //of chi2. I.e. if neighbouring grid pts do not result in larger chi2 differences, we stop the whole fit
   //lower value will give more precision, but will increase computational time.
@@ -1211,16 +1199,6 @@ bool DLM_Fit::DEBUG_PrepareForWalk(){
     theory_model[idata] = fit_fun;
     function_type = 1;
   }
-
-  //void DLM_SA_Fit::SetFitFunction(SA_FitFunction fit_fun){
-  //  if(!theory_model){
-  //    printf("\033[1;33mWARNING:\033[0m DLM_SA_Fit::SetFitFunction given index out of scope\n");
-  //    function_type = -1;
-  //    return;
-  //  }
-  //  theory_model[0] = fit_fun;
-  //  function_type = 0;
-  //}
 
   float DLM_SA_Fit::GetParameter(const unsigned& ipar){
     if(ipar>=N_Pars || !Par){
@@ -1343,14 +1321,16 @@ bool DLM_Fit::DEBUG_PrepareForWalk(){
     //aim at evaluating (check in that order)
     //a minimum of 1% of the grid points
     //a minimum of 30 points
-    //a maximum of 300 points
+    //a maximum of 300 points (num_step_per_ref)
     //a maximum of TotNumGridPts
     //dont allow more than half of TotNumGridPts, as otherwise you will be stick in random picking
     unsigned num_pts_to_explore = TotNumGridPts/100;
     if(num_pts_to_explore<30) num_pts_to_explore = 30;
-    if(num_pts_to_explore>300) num_pts_to_explore = 300;
+    if(num_pts_to_explore>num_step_per_ref) num_pts_to_explore = num_step_per_ref;
     if(num_pts_to_explore>TotNumGridPts/2) num_pts_to_explore = TotNumGridPts;
     num_solutions = 1;
+    unsigned stuck_cutoff = num_pts_to_explore/4;
+    if(stuck_cutoff<30) stuck_cutoff = 30;
     
     std::vector<std::vector<double>> ParLimMin(max_n_solutions);
     std::vector<std::vector<double>> ParLimMax(max_n_solutions);
@@ -1366,11 +1346,23 @@ bool DLM_Fit::DEBUG_PrepareForWalk(){
       }
     }
 
+
+for(unsigned short sDim=0; sDim<N_Pars; sDim++){
+printf(" start: p%u %.5e (%.5e, %.5e)\n", sDim, globalBestPars->at(sDim), ParLimMin[0].at(sDim), ParLimMax[0].at(sDim));
+}
+
     double* par_values = new double [N_Pars];
     //<= as we need to do at least one iteration
     for(unsigned iref=0; iref<=num_refinements; iref++){
-printf("iref = %u/%u\n",iref,num_refinements);
+//printf("iref = %u/%u\n",iref,num_refinements);//debug_info
+
+
+
       int add_new_solutions = 0;
+      //we reset the best chi2 for each iref.
+      //the globalBestChi2 is saved separately
+      currentBestChi2 = 1e37;
+
       for(unsigned isol=0; isol<num_solutions; isol++){
         //here we only keep the best solutions, with a fixed maximal length
         //the 0-th element is always the worst best solution, the last element is the best current solution
@@ -1407,14 +1399,30 @@ printf("iref = %u/%u\n",iref,num_refinements);
         //neighbours around the best current solution
         std::vector<unsigned> best_neighbours_id(0);
         bool best_neighbours_init = false;
-        for(unsigned irnd=0; irnd<=num_pts_to_explore; irnd++){
+        unsigned stuck_counter = 0;
+        for(int irnd=0; irnd<=num_pts_to_explore; irnd++){
+//printf(" irnd %u/%u, sc %u/%u, best chi2 = %.3e\n",irnd,num_pts_to_explore,stuck_counter,stuck_cutoff,globalBestChi2);
           unsigned irnd_next = irnd;
           //we have the random explore only if we do not need to check all points
           if(num_pts_to_explore!=TotNumGridPts && irnd!=num_pts_to_explore){
+
             //at the start we only explore new points, later on we reduce the probability
-            float prob_new_explore = 1. - float(irnd)/float(num_pts_to_explore);            
+            float prob_new_explore = 1. - float(irnd)/float(num_pts_to_explore);  
+
+            //if we start a new refinement step, we evaluate the previously achieved best point on the new grid
+            //to have at least one good reference point.
+            if(iref!=0 && irnd==0){
+              for(unsigned short sDim=0; sDim<chi2_grid[isol]->GetDim(); sDim++){
+                which_bin[sDim] = chi2_grid[isol]->FindBin(sDim, globalBestPars->at(sDim));
+////printf("  p%u best %.5e new %.5e (%.5e)\n", sDim, globalBestPars->at(sDim), chi2_grid[isol]->GetBinCenter(sDim, which_bin[sDim]),chi2_grid[isol]->GetBinCenter(sDim, which_bin[sDim])/globalBestPars->at(sDim));
+//printf(" p%u %.5e (%.5e, %.5e)\n", sDim, globalBestPars->at(sDim), ParLimMin[0].at(sDim), ParLimMax[0].at(sDim));
+
+              }
+//printf("  best chi2 = %.3e\n",globalBestChi2);
+              irnd_next = chi2_grid[isol]->GetTotBin(which_bin);
+            }
             //we explore a new random point
-            if(rangen->Uniform()<prob_new_explore || explored_points.size()==0){
+            else if(rangen->Uniform()<prob_new_explore || explored_points.size()==0){
               do irnd_next = rangen->Integer(TotNumGridPts);
               while(chi2_grid[isol]->GetBinContent(irnd_next)!=-1); 
             }//new point
@@ -1451,7 +1459,6 @@ printf("iref = %u/%u\n",iref,num_refinements);
             if(!best_neighbours_init){
               best_neighbours_id.clear();
               best_neighbours_id = get_all_neighbours(isol, explored_points.back());
-//printf("get neighb\n");
               best_neighbours_init = true;
             }
             if(best_neighbours_id.size()==0) continue;
@@ -1471,8 +1478,22 @@ printf("iref = %u/%u\n",iref,num_refinements);
           if(currentChi2<currentBestChi2){
             currentBestChi2 = currentChi2;
             chi2_grid[isol]->GetBinCoordinates(irnd_next, which_bin_best);
-            tot_best_bin->at(isol) = irnd_next;
+            current_best_bin->at(isol) = irnd_next;
             best_neighbours_init = false;
+            stuck_counter = 0;
+          }
+          else{
+            stuck_counter++;
+          }
+          if(stuck_counter>=stuck_cutoff && irnd<num_pts_to_explore-1 && irnd>=num_pts_to_explore/2){
+            irnd = num_pts_to_explore-1;
+          }
+
+          if(currentBestChi2<globalBestChi2){
+            globalBestChi2 = currentBestChi2;
+            for(unsigned ipar=0; ipar<N_Pars; ipar++){
+              globalBestPars->at(ipar) = chi2_grid[isol]->GetBinCenter(ipar, which_bin_best[ipar]);
+            }
           }
           if(currentChi2>worst_chi2){
             worst_chi2 = currentChi2;
@@ -1514,14 +1535,7 @@ printf("iref = %u/%u\n",iref,num_refinements);
                 explored_points.insert(explored_points.begin() + insert_index, irnd_next);
               }
           }
-//printf("%i chi2 = %f (%f)\n",irnd, chi2_grid[isol]->GetBinContent(explored_points.back()), currentBestChi2);
         }//irnd
-
-
-
-        //printf("b chi2 = %f (%f)\n",chi2_grid[isol]->GetBinContent(explored_points.back()), currentBestChi2);
-        //chi2_grid[isol]->GetBinCoordinates(explored_points.back(), which_bin_best);
-
 
         if(explored_points.size()){
           
@@ -1530,64 +1544,55 @@ printf("iref = %u/%u\n",iref,num_refinements);
           //unsigned* which_bin_best = new unsigned [N_Pars];
           chi2_grid[isol]->GetBinCoordinates(explored_points.back(), which_bin);
           chi2_grid[isol]->GetBinCoordinates(explored_points.back(), which_bin_best);
-          tot_best_bin->at(isol) = explored_points.back();
+          current_best_bin->at(isol) = explored_points.back();
           bool close_chi2 = true;
-//printf("which_bin_best");
 
           for(unsigned ipar=0; ipar<N_Pars; ipar++){
-//printf(" %f",which_bin[ipar]);    
             freeze_parameter[isol].at(ipar) = true;
             if(which_bin_best[ipar]>0){
               which_bin[ipar] = which_bin_best[ipar]-1;
-//if(chi2_grid[isol]->GetBinContent(which_bin)==-1) {printf("NEGATIVE -\n"); usleep(1000e3);}
-//if(chi2_grid[isol]->GetBinContent(which_bin_best)==-1) printf("NEGATIVE B -\n");
-//printf(" chi2 %f vs %f\n",chi2_grid[isol]->GetBinContent(which_bin),chi2_grid[isol]->GetBinContent(which_bin_best));
               if(chi2_grid[isol]->GetBinContent(which_bin)-chi2_grid[isol]->GetBinContent(which_bin_best) > epsChi2){
-printf("Xdelta%i %f\n",ipar,chi2_grid[isol]->GetBinContent(which_bin)-chi2_grid[isol]->GetBinContent(which_bin_best));
-//usleep(1000e3);
+//printf("Xdelta%i %f\n",ipar,chi2_grid[isol]->GetBinContent(which_bin)-chi2_grid[isol]->GetBinContent(which_bin_best));//debug_info
                 close_chi2 = false;
                 freeze_parameter[isol].at(ipar) = false;
               }
               else{
-printf("delta %i %f\n",ipar,chi2_grid[isol]->GetBinContent(which_bin)-chi2_grid[isol]->GetBinContent(which_bin_best));
+//printf("delta %i %f\n",ipar,chi2_grid[isol]->GetBinContent(which_bin)-chi2_grid[isol]->GetBinContent(which_bin_best));//debug_info
               }
               which_bin[ipar] = which_bin_best[ipar];
             }
             if(which_bin_best[ipar]<2*ParSteps->at(ipar)){
               which_bin[ipar] = which_bin_best[ipar]+1;
-//if(chi2_grid[isol]->GetBinContent(which_bin)==-1) {printf("NEGATIVE +\n"); usleep(1000e3);}     
-//if(chi2_grid[isol]->GetBinContent(which_bin_best)==-1) printf("NEGATIVE B +\n");      
               if(chi2_grid[isol]->GetBinContent(which_bin)-chi2_grid[isol]->GetBinContent(which_bin_best) > epsChi2){
-printf("Ydelta%i %f\n",ipar,chi2_grid[isol]->GetBinContent(which_bin)-chi2_grid[isol]->GetBinContent(which_bin_best));
+//printf("Ydelta%i %f\n",ipar,chi2_grid[isol]->GetBinContent(which_bin)-chi2_grid[isol]->GetBinContent(which_bin_best));//debug_info
                 close_chi2 = false;
                 freeze_parameter[isol].at(ipar) = false;
               }
               else{
-printf("deltaa %i %f\n",ipar,chi2_grid[isol]->GetBinContent(which_bin)-chi2_grid[isol]->GetBinContent(which_bin_best));
+//printf("deltaa %i %f\n",ipar,chi2_grid[isol]->GetBinContent(which_bin)-chi2_grid[isol]->GetBinContent(which_bin_best));//debug_info
               }              
               which_bin[ipar] = which_bin_best[ipar];
             }
+            //make sure that the global best chi2 is both within the best bin, as well as within epsChi2*0.5
+            //otherwise the error estimation will not work out
+            if(currentBestChi2 - globalBestChi2 > epsChi2*0.5){
+              close_chi2 = false;
+            }
+            if(chi2_grid[isol]->FindBin(ipar, globalBestPars->at(ipar)) != which_bin_best[ipar]){
+              //printf(" %i %i\n", chi2_grid[isol]->FindBin(ipar, globalBestPars->at(ipar)), which_bin_best[ipar]);//debug_info
+              close_chi2 = false;
+            }
+            
+
           }//ipar
-//printf("\n");      
-//for(unsigned ipar=0; ipar<N_Pars; ipar++) freeze_parameter[isol].at(ipar) = false;
-
-
-//close_chi2 = false;
 
           //we are done here
           if(close_chi2){
             converged_sol.at(isol) = true;
-//printf("DONE AT %i\n",iref);
             continue;
           }
             
         }
-
-
-
-
-
-
 
 //IT NEVER FINDS ANY ALTERNATIVES
 //OKAY, MADE IT WORK, BUT IT DOES NOT WORK
@@ -1634,6 +1639,7 @@ usleep(1000e3);
         double cent_pos = 0;
         double half_len = 0;
         double dist_chi2 = 0;
+        double worst_dist_chi2 = 0;
         chi2_grid[isol]->GetBinCoordinates(explored_points.back(), which_bin_best);
         for(unsigned ipar=0; ipar<N_Pars; ipar++){
           which_bin[ipar] = which_bin_best[ipar];
@@ -1669,84 +1675,145 @@ usleep(1000e3);
             }
             which_bin[ipar] =  which_bin_best[ipar];
           }
-  //printf("dist_chi2 %i = %f\n",ipar,dist_chi2);
+
           dist_chi2 /= epsChi2;
+          if(worst_dist_chi2 < dist_chi2){
+            worst_dist_chi2 = dist_chi2;
+          }
           dist_chi2 = exp(-pow(dist_chi2,2.));
 
           if(dist_chi2>1){
             dist_chi2 = 1;
             printf("\033[1;33mWARNING:\033[0m dist_chi2>1, points to a bug, contact the developers\n");
           }
-//printf("%f %f, ipar%i, dch2 %f\n",dist,dist_chi2,ipar,chi2_grid[isol]->GetBinContent(which_bin) - chi2_grid[isol]->GetBinContent(which_bin_best));
           if(dist_chi2>dist){
             dist = dist_chi2;
           }
-//printf(" dist_chi2 = %f\n",dist_chi2);
           refinement_penalty[isol].at(ipar) *= 1+(refinment_factor-1)*dist;
+
+          //avoid getting stuck at the same limits
+          if(refinement_penalty[isol].at(ipar) == refinment_factor){
+            refinement_penalty[isol].at(ipar) *= 0.99;
+          }
 
           ParLimMin[isol].at(ipar) = chi2_grid[isol]->GetBinCenter(ipar, which_bin_best[ipar]) - original_range.at(ipar)*0.5*pow(1./refinment_factor, iref+1)*refinement_penalty[isol].at(ipar);
           if(ParLimMin[isol].at(ipar) < ParMin->at(ipar)) ParLimMin[isol].at(ipar) = ParMin->at(ipar);
           ParLimMax[isol].at(ipar) = chi2_grid[isol]->GetBinCenter(ipar, which_bin_best[ipar]) + original_range.at(ipar)*0.5*pow(1./refinment_factor, iref+1)*refinement_penalty[isol].at(ipar);
           if(ParLimMax[isol].at(ipar) > ParMax->at(ipar)) ParLimMax[isol].at(ipar) = ParMax->at(ipar);
 
-        }
+        }//ipar
 
+
+        //double progress = exp(1.-worst_dist_chi2)*100.;
+        double progress = worst_dist_chi2>1?100./(1.+log(pow(worst_dist_chi2,1./exp(1.)))):100.;
+        printf("\r\033[K Fit progress %.0f%%",progress);
+        cout << flush;        
+        
 
       }//isol
       num_solutions += add_new_solutions;
-printf("currentBestChi2 = %f\n",currentBestChi2);
+
+for(unsigned short sDim=0; sDim<chi2_grid[0]->GetDim(); sDim++){
+//printf(" finish: p%u %.5e (%.5e, %.5e)\n", sDim, globalBestPars->at(sDim), ParLimMin[0].at(sDim), ParLimMax[0].at(sDim));
+}
+//printf("currentBestChi2 = %f (%f)\n",currentBestChi2, globalBestChi2);//debug_info
+//printf(" at bin %u\n",current_best_bin->at(0));//debug_info
     }//iref
     delete [] par_values;
+    printf("\r\033[K");
 
-    printf("best chi2 = %f\n",currentBestChi2);
+
+
+
+
+
+    //printf("best chi2 = %f\n",currentBestChi2);
+    //printf("best chi2 = %f at:\n",globalBestChi2);//debug_info
+    //for(unsigned ipar=0; ipar<N_Pars; ipar++){
+    //  printf(" p%i %.3f", ipar, globalBestPars->at(ipar));//debug_info
+    //}
+    //printf("\n");
+
+/**/
     for(unsigned ipar=0; ipar<N_Pars; ipar++){
       which_bin[ipar] = which_bin_best[ipar];
     }
     for(unsigned ipar=0; ipar<N_Pars; ipar++){
       double par_val = chi2_grid[0]->GetBinCenter(ipar, which_bin_best[ipar]);
       //double chi2_val = chi2_grid[0]->GetBinContent(ipar, which_bin_best[ipar]);
-      //printf("pv %f %f %f\n", chi2_grid[0]->GetLowEdge(ipar), par_val, chi2_grid[0]->GetUpEdge(ipar));
+      //printf("pv %f %f %f\n", chi2_grid[0]->GetLowEdge(ipar), par_val, chi2_grid[0]->GetUpEdge(ipar));//debug_info
       which_bin[ipar] = 0;
       double chi2_limL = chi2_grid[0]->GetBinContent(which_bin);
       double chi2_limB = chi2_grid[0]->GetBinContent(which_bin_best);
       which_bin[ipar] = ParSteps->at(ipar)-1;
       double chi2_limU = chi2_grid[0]->GetBinContent(which_bin);
       which_bin[ipar] = which_bin_best[ipar];
-      //printf("chi2 %f %f %f\n", chi2_limL, chi2_limB, chi2_limU);
       which_bin[ipar] = which_bin_best[ipar]-1;
       chi2_limL = chi2_grid[0]->GetBinContent(which_bin);
       which_bin[ipar] = which_bin_best[ipar]+1;
       chi2_limU = chi2_grid[0]->GetBinContent(which_bin);
       which_bin[ipar] = which_bin_best[ipar];
-      //printf("chi2 %f %f %f\n", chi2_limL, chi2_limB, chi2_limU);
     }
 
-
+    
     //fine-tune the values using extrapolation
     const unsigned fine_pts = 100;
     double true_min_chi2 = 1e37;
 
-
+    printf(" Performing the error estimation ...\n");
     
     for(unsigned isol=0; isol<num_solutions; isol++){
 
       //calculate even more points
-      std::vector<unsigned> the_neighborhood = get_the_neighborhood(isol, tot_best_bin->at(isol));
+      std::vector<unsigned> the_neighborhood = get_the_neighborhood(isol, current_best_bin->at(isol));
+      //printf("the_neighborhood.size = %zu\n",the_neighborhood.size());
       double* par_values = new double [N_Pars];
-      for(unsigned ipoint=0; ipoint<the_neighborhood.size(); ipoint++){
-        if(chi2_grid[isol]->GetBinContent(the_neighborhood.at(ipoint))==-1){
-          chi2_grid[isol]->GetBinAxisCenters(the_neighborhood.at(ipoint),par_values);
-          chi2_grid[isol]->SetBinContent(the_neighborhood.at(ipoint), EvalChisquare(par_values));
+
+
+      std::vector<unsigned> compact_neighborhood;
+      unsigned num_neighborhood_pts_to_eval = the_neighborhood.size();
+      if(num_neighborhood_pts_to_eval > error_steps){
+        num_neighborhood_pts_to_eval = error_steps;
+        int rnd_id;
+        while(compact_neighborhood.size()<num_neighborhood_pts_to_eval){
+          rnd_id = rangen->Integer(the_neighborhood.size());
+          compact_neighborhood.push_back(the_neighborhood.at(rnd_id));
+          //delete the used element (AI)
+          auto it = std::find(the_neighborhood.begin(), the_neighborhood.end(), rnd_id);
+          if (it != the_neighborhood.end()) {
+              *it = std::move(the_neighborhood.back());
+              the_neighborhood.pop_back(); // Reduces size by 1 in O(1) time
+          }
         }
+      }
+      else{
+        compact_neighborhood = the_neighborhood;
+      }
+      
+
+      for(unsigned ipoint=0; ipoint<compact_neighborhood.size(); ipoint++){
+        if(chi2_grid[isol]->GetBinContent(compact_neighborhood.at(ipoint))==-1){
+          chi2_grid[isol]->GetBinAxisCenters(compact_neighborhood.at(ipoint),par_values);
+          chi2_grid[isol]->SetBinContent(compact_neighborhood.at(ipoint), EvalChisquare(par_values));
+        }
+
+        std::vector<float> good_parameters(N_Pars,0);
+        for(unsigned ipar=0; ipar<N_Pars; ipar++){
+          good_parameters.at(ipar) = par_values[ipar];
+        }
+
+        globalBestPars1sig->push_back(good_parameters);
+
       }
       delete [] par_values;
 
 
-
+      /*
+      printf("starting error estimate Gemini\n");
 
 // Get the exact coordinates and chi2 value of the minimum
-    chi2_grid[isol]->GetBinCoordinates(tot_best_bin->at(isol), which_bin_best);
-    double y0 = chi2_grid[isol]->GetBinContent(tot_best_bin->at(isol));
+    chi2_grid[isol]->GetBinCoordinates(current_best_bin->at(isol), which_bin_best);
+    double y0 = chi2_grid[isol]->GetBinContent(current_best_bin->at(isol));
 
     // Sync our working bin array to the best bin position
     for (unsigned ipar = 0; ipar < N_Pars; ipar++) {
@@ -1857,41 +1924,48 @@ printf("currentBestChi2 = %f\n",currentBestChi2);
         } else {
             errors[ipar] = -1.0; 
         }
-        printf("%i val %e err %e\n", ipar, chi2_grid[isol]->GetBinCenter(ipar, which_bin_best[ipar]), errors[ipar]);
+        printf("%i val %e err %e\n", ipar, chi2_grid[isol]->GetBinCenter(ipar, which_bin_best[ipar]), errors[ipar]);//debug_info
     }
-
-
+*/
+    //printf("starting error estimate ala Dimi\n");
 
     //numerical error based on what is on the grid (isol)
-    std::vector<unsigned> best_neighbours_id = get_the_neighborhood(0, tot_best_bin->at(0));
-    std::vector<double> largest_error = errors;
+    std::vector<unsigned> best_neighbours_id = get_the_neighborhood(0, current_best_bin->at(0));
+//printf("best_neighbours_id.size() = %zu\n",best_neighbours_id.size());
+    std::vector<double> largest_error(N_Pars, 0);
     par_values = new double [N_Pars];
     
     for(unsigned ineigh=0; ineigh<best_neighbours_id.size(); ineigh++){
       chi2_grid[0]->GetBinAxisCenters(best_neighbours_id.at(ineigh), par_values);
+      
       for(unsigned ipar=0; ipar<N_Pars; ipar++){
-
-        double delta_chi2 = chi2_grid[0]->GetBinContent(best_neighbours_id.at(ineigh)) - currentBestChi2;
-        double par_diff = fabs(par_values[ipar] - chi2_grid[0]->GetBinCenter(ipar, which_bin_best[ipar]));
+        //double delta_chi2 = chi2_grid[0]->GetBinContent(best_neighbours_id.at(ineigh)) - currentBestChi2;
+        double delta_chi2 = chi2_grid[0]->GetBinContent(best_neighbours_id.at(ineigh)) - globalBestChi2;
+        //double par_diff = fabs(par_values[ipar] - chi2_grid[0]->GetBinCenter(ipar, which_bin_best[ipar]));
+        double par_diff = fabs(par_values[ipar] - globalBestPars->at(ipar));
+        //make sure that we dont deal with an effective zero (i.e. we compare best with itself)
+        if(delta_chi2 < 1e-37) continue;
         //comes from definition of chi2
         double par_err = par_diff/sqrt(delta_chi2);
         
-        //if(par_err > largest_error.at(ipar)){
+        if(par_err > largest_error.at(ipar)){
           largest_error.at(ipar) = par_err;
-        //}
+          //printf(" %i %i delta_chi2 = %.4f; par_diff = %.3f; par_err = %.3f;\n",ineigh, ipar, delta_chi2,par_diff,par_err);//debug_info
+        }
       }
     }
     delete [] par_values;
 
     //
-    printf("grid estimate of the error:\n");
-    for(unsigned ipar=0; ipar<N_Pars; ipar++){
-      printf(" %i val %e err %e\n", ipar, chi2_grid[isol]->GetBinCenter(ipar, which_bin_best[ipar]), largest_error.at(ipar));
-    }
+    //printf("grid estimate of the error:\n");
+    //for(unsigned ipar=0; ipar<N_Pars; ipar++){
+    //  printf(" %i val %e err %e\n", ipar, chi2_grid[isol]->GetBinCenter(ipar, which_bin_best[ipar]), largest_error.at(ipar));//debug_info
+    //}
 
     //sol missing
     for(unsigned ipar=0; ipar<N_Pars; ipar++){
-      ParSol[isol]->at(ipar) = chi2_grid[isol]->GetBinCenter(ipar, which_bin_best[ipar]);
+      //ParSol[isol]->at(ipar) = chi2_grid[isol]->GetBinCenter(ipar, which_bin_best[ipar]);
+      ParSol[isol]->at(ipar) = globalBestPars->at(ipar);
       ParErr[isol]->at(ipar) = largest_error.at(ipar);
     }
     
@@ -1920,8 +1994,8 @@ printf("currentBestChi2 = %f\n",currentBestChi2);
       delete [] par_val;
       */
     }
-    //printf("true_min_chi2 = %f\n",true_min_chi2);
 
+    
     return true;
   }
 
@@ -1958,10 +2032,7 @@ printf("currentBestChi2 = %f\n",currentBestChi2);
         else{
           theory_val = theory_model[idata](&var_val, model_pars);
         }
-        //if(uBin==0){
-        //  printf("%f %f %f %f\n",var_val,data_val,err_val,theory_val);
-        //}
-        
+
         chi2_val += pow((data_val - theory_val)/err_val,2.);
       }
       delete [] model_pars;
@@ -1970,7 +2041,7 @@ printf("currentBestChi2 = %f\n",currentBestChi2);
   }
 
   float DLM_SA_Fit::GetChisquare(){
-    return currentBestChi2;
+    return globalBestChi2;
   }
   int DLM_SA_Fit::GetNDF(){
     return int(num_data_pts) - int(num_free_fit_pars);
@@ -1981,8 +2052,12 @@ printf("currentBestChi2 = %f\n",currentBestChi2);
   unsigned DLM_SA_Fit::GetNumberFreeParameters(){
     return num_free_fit_pars;
   }
-  float DLM_SA_Fit::GetProb(){
+  float DLM_SA_Fit::GetProb() const{
 //TBD
+  }
+
+  std::vector<std::vector<float>> DLM_SA_Fit::GetOneSigmaParameters() const{
+    return *globalBestPars1sig;
   }
 
   void DLM_SA_Fit::SetRandomSeed(unsigned rnd_seed){
@@ -2014,7 +2089,6 @@ printf("currentBestChi2 = %f\n",currentBestChi2);
     return coords;
   }
 
-
   //neighbours shifted by 1 unit in ANY of the par space
   std::vector<unsigned> DLM_SA_Fit::get_the_neighborhood(unsigned isol, unsigned tot_bin_id){
     std::vector<unsigned> coords(0);
@@ -2035,87 +2109,3 @@ printf("currentBestChi2 = %f\n",currentBestChi2);
     }
     return coords;
   }
-
-
-/*
- * @brief Maps a flat 1D linear index into an N-dimensional vector of bin indices.
- * * Convention: The last dimension changes the fastest in the 1D grid layout.
- * * @param linear_index The 1D global index on your grid.
- * @return std::vector<unsigned> N-dimensional coordinate indices, where element i is in [0, N_i).
- */
- /*
-std::vector<unsigned> DLM_SA_Fit::unflatten_index(unsigned linear_index){
-    
-    std::vector<unsigned> null_vector(0);
-    if(!ParSteps){
-      printf("\033[1;33mWARNING:\033[0m DLM_SA_Fit::unflatten_index cannot be called before intializing the parameters\n");
-      
-      return null_vector;
-    }  
-    std::vector<unsigned> coords(N_Pars);
-
-    unsigned TotNumGridPts=1;
-    for(unsigned ipar=0; ipar<N_Pars; ipar++){
-      TotNumGridPts *= (2*ParSteps->at(ipar)+1);
-    }
-    if(!TotNumGridPts){
-      printf("\033[1;33mWARNING:\033[0m DLM_SA_Fit::unflatten_index says the parameter space contains a dimension with zero parameters\n");
-      return null_vector;
-    }
-    if(linear_index>=TotNumGridPts){
-      printf("\033[1;33mWARNING:\033[0m DLM_SA_Fit::unflatten_index has a linear_index that is out of scope\n");
-      return null_vector;
-    }    
-
-    unsigned current = linear_index;
-    
-    // Loop backwards from the last dimension to the first.
-    // Using 'i' from dimensions down to 1 to safely handle underflows in loops.
-    for (unsigned ipar = N_Pars; ipar > 0; ipar--) {
-        unsigned dim_idx = ipar - 1;
-        
-        // The remainder gives the coordinate for the current dimension
-        coords[dim_idx] = current % ParSteps->at(dim_idx);
-        
-        // The quotient is passed to the next slower-changing dimension
-        current /= ParSteps->at(dim_idx);
-    }
-    
-    return coords;
-    
-}
-
-unsigned DLM_SA_Fit::flatten_index(const std::vector<unsigned>& coords) {
-    
-    if(!ParSteps) {
-        printf("\033[1;33mWARNING:\033[0m DLM_SA_Fit::flatten_index cannot be called before initializing the parameters\n");
-        return 0;
-    }  
-
-    // Check if the input vector size matches the number of parameters
-    if(coords.size() != N_Pars) {
-        printf("\033[1;33mWARNING:\033[0m DLM_SA_Fit::flatten_index dimension mismatch. Expected %u, got %lu\n", 
-               N_Pars, coords.size());
-        return 0;
-    }
-
-    unsigned linear_index = 0;
-
-    // Loop forward through the dimensions (from slowest changing to fastest changing).
-    // Math behind this: Horner's method evaluates the index without explicit nested products.
-    // Index = (...((coord[0] * N_1 + coord[1]) * N_2 + coord[2]) * ...) * N_(n-1) + coord[n-1]
-    for(unsigned ipar = 0; ipar < N_Pars; ipar++) {
-        
-        // Validation: Ensure the requested index is strictly within the allocated steps for this parameter
-        if(coords.at(ipar) >= ParSteps->at(ipar)) {
-            printf("\033[1;33mWARNING:\033[0m DLM_SA_Fit::flatten_index coordinate for parameter %u is out of scope (%u >= %u)\n", 
-                   ipar, coords.at(ipar), ParSteps->at(ipar));
-            return 0;
-        }
-
-        linear_index = linear_index * ParSteps->at(ipar) + coords.at(ipar);
-    }
-    
-    return linear_index;
-}
-*/
